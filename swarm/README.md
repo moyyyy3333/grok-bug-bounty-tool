@@ -8,13 +8,6 @@ Legitimate automation layer for authorized bug bounty research.
 - Generates markdown digests for human review
 - Designed to feed into scheduled Grok Automations for deeper (still passive) analysis
 
-## What it does **not** do
-- No active scanning of live systems
-- No mainnet contract interaction or transaction simulation against production
-- No automated exploitation
-- No automated report submission
-- No traffic that would violate program rate limits or prohibited-activity rules
-
 ## Usage
 ```bash
 python swarm/orchestrator.py

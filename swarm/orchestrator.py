@@ -1,87 +1,76 @@
 #!/usr/bin/env python3
-"""
-Passive Swarm Orchestrator for authorized bug bounty research.
+"""Fetch and rank public Immunefi programs."""
 
-- Pulls public Immunefi bounty data
-- Ranks programs by published max bounty and metadata
-- Outputs structured digests for human review
-- Does NOT perform active scanning, mainnet interaction, exploitation, or automated submissions
-- Designed to feed into Grok Automations for further analysis
-
-Use only on programs where you are authorized to research under their published rules.
-"""
+from __future__ import annotations
 
 import json
+import sys
 import urllib.request
 from datetime import datetime, timezone
-from typing import List, Dict, Any
+from pathlib import Path
+from typing import Any
 
-IMMUNEFI_API = "https://immunefi.com/public-api/bounties.json"
+API = "https://immunefi.com/public-api/bounties.json"
+OUT = Path(__file__).resolve().parents[1] / "reports" / "passive-digest.md"
 
-def fetch_immunefi_bounties() -> List[Dict[str, Any]]:
+
+def fetch() -> list[dict[str, Any]]:
     try:
-        with urllib.request.urlopen(IMMUNEFI_API, timeout=30) as resp:
+        with urllib.request.urlopen(API, timeout=30) as resp:
             data = json.load(resp)
             return data if isinstance(data, list) else []
-    except Exception as e:
-        print(f"Failed to fetch Immunefi data: {e}")
+    except Exception as exc:
+        print(f"fetch failed: {exc}", file=sys.stderr)
         return []
 
-def rank_programs(programs: List[Dict[str, Any]], min_max_bounty: int = 1_000_000) -> List[Dict[str, Any]]:
+
+def rank(programs: list[dict[str, Any]], min_bounty: int = 1_000_000) -> list[dict[str, Any]]:
     ranked = []
     for p in programs:
-        max_bounty = p.get("maxBounty") or 0
-        if max_bounty < min_max_bounty:
+        mb = p.get("maxBounty") or 0
+        if mb < min_bounty:
             continue
         ranked.append({
             "project": p.get("project"),
             "slug": p.get("slug"),
-            "max_bounty": max_bounty,
-            "launch_date": p.get("launchDate"),
+            "max_bounty": mb,
             "updated": p.get("updatedDate"),
             "kyc": p.get("kyc"),
-            "language": p.get("language"),
-            "ecosystem": p.get("ecosystem"),
-            "program_type": p.get("programType"),
             "url": f"https://immunefi.com/bug-bounty/{p.get('slug')}/information/" if p.get("slug") else None,
         })
     ranked.sort(key=lambda x: x["max_bounty"], reverse=True)
     return ranked
 
-def generate_digest(ranked: List[Dict[str, Any]]) -> str:
+
+def to_md(ranked: list[dict[str, Any]]) -> str:
     lines = [
         f"# Passive Bounty Digest ({datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')})",
         "",
-        "**Source**: Public Immunefi API only. No active testing performed.",
-        "**Purpose**: Ranked list for human review under authorized program rules.",
+        "Source: public Immunefi API. No active testing.",
         "",
-        "## High-Ceiling Programs (≥ $1M max)",
+        "## High-ceiling programs (≥ $1M)",
         "",
     ]
-    for i, p in enumerate(ranked[:20], 1):
-        lines.append(
-            f"{i}. **{p['project']}** — ${p['max_bounty']:,} max"
-            f" | KYC: {p['kyc']} | Updated: {str(p['updated'])[:10] if p['updated'] else 'n/a'}"
-        )
+    for i, p in enumerate(ranked[:25], 1):
+        lines.append(f"{i}. **{p['project']}** — ${p['max_bounty']:,}")
         if p["url"]:
             lines.append(f"   {p['url']}")
         lines.append("")
-    lines.append("\n---\n*This digest is passive public data only. Manual verification and compliance with each program's rules are required before any research activity.*")
     return "\n".join(lines)
 
-def main():
-    print("Fetching public Immunefi bounty data...")
-    programs = fetch_immunefi_bounties()
+
+def main() -> int:
+    programs = fetch()
     if not programs:
-        print("No data retrieved.")
-        return
-    ranked = rank_programs(programs)
-    digest = generate_digest(ranked)
-    print(digest)
-    # Optionally write to file
-    with open("reports/passive-digest.md", "w") as f:
-        f.write(digest)
-    print("\nDigest written to reports/passive-digest.md")
+        return 1
+    ranked = rank(programs)
+    md = to_md(ranked)
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(md)
+    print(md)
+    print(f"\nWrote {OUT}")
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

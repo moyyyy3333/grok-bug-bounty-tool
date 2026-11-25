@@ -1,20 +1,18 @@
 # Swarm
 
-Multi-role research coordinator for authorized bug bounty work.
+Research coordinator.
 
-## Roles
-- recon — public-source mapping
-- analysis — triage and scoring
-- reporting — draft structured notes
-- learner — digests session logs
-- exploitation — defined but gated; requires explicit human approval and is not auto-executed
+## Modules
+- `run_swarm.py` — launches non-gated roles against targets from `reports/`
+- `agent_launcher.py` — role definitions and task runner
+- `orchestrator.py` — public Immunefi ranking
+- `re_unified.py` — static RE pipeline with fallbacks
+- `scanner.py` — offline text/header scorer
+- `deploy.py` — writes a deployment manifest
 
 ## Run
 ```bash
 python swarm/run_swarm.py
 ```
 
-It reads targets from the existing `reports/*.md` digests, launches the non-gated roles, and writes `reports/swarm-last-run.json` plus logs under `logs/swarm/`.
-
-## Limits
-This coordinates research agents over public data and previously generated digests. It does not autonomously discover novel vulnerabilities, generate exploits, or submit reports.
+Exploitation role is defined in the launcher but gated and not auto-executed.

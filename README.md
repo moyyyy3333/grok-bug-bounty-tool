@@ -1,23 +1,18 @@
-# Grok Bug Bounty Research Toolkit
+# Bug Bounty Research Toolkit
 
-Passive research coordination tools for authorized bug bounty work.
+Research coordination tools for authorized bug bounty work.
 
-## Components
-- `swarm/` — Passive orchestrator that ranks public Immunefi programs and generates digests
-- `headroom/` — Optional output compression / session learning helpers (install headroom-ai locally if desired)
+## Layout
+- `swarm/` — agent launcher, orchestrator, RE pipeline, runner
+- `headroom/` — session logging, learn mode, output compaction
+- `reports/` — generated digests and run summaries
 
-## Important Boundaries
-This repository contains **passive public-data tools only**. It does not include:
-- Active scanners
-- Exploit code
-- Mainnet interaction scripts
-- Automated submission tooling
-
-All research must stay within the published rules of the specific bounty program you are authorized to test. Out-of-scope activity is unauthorized and can create legal risk.
-
-## Quick Start
+## Quick start
 ```bash
-python swarm/orchestrator.py
+python swarm/run_swarm.py          # coordinate roles over existing reports
+python swarm/orchestrator.py       # refresh public Immunefi ranking
+python swarm/re_unified.py --help  # static RE pipeline on a local binary
 ```
 
-Review the generated `reports/passive-digest.md`, then perform any further analysis manually or via scheduled Grok Automations under the target program's rules.
+## Limits
+Coordinates research over public data and previously generated digests. Does not autonomously discover novel vulnerabilities, generate exploits, or submit reports. Exploitation role is defined but gated.
